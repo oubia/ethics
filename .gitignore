@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+./RAG_Embeddings/VectorStore/
+./RAG_Embeddings/chroma.sqlite3
+./RAG_Embeddings/chroma.sqlite3-journal
+./RAG_Embeddings/chroma.db
+./RAG_Embeddings/chroma.db-journal
+./RAG_Embeddings/chroma
