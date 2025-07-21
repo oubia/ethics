@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gradient-to-tr from-[#f8fafc] via-[#e0e7ff] to-[#f0fdfa] min-h-screen;
+}
+body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+body::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Webkit */
+}
+body {
+  overflow: hidden;
+  /* ...rest of your rules... */
+}
+
+.glass-card {
+  @apply bg-white rounded-2xl ;
+}
+.selector-card {
+  @apply bg-white rounded-xl shadow-md p-4 my-2 border hover:border-[#818cf8] transition-all duration-150;
+}
+.styled-textarea {
+  @apply bg-white border border-[#818cf8] rounded-xl p-4 shadow focus:outline-none focus:ring-2 focus:ring-[#38bdf8] resize-none;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #8b5cf6 #f3f4f6;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #38bdf8 0%, #606ff6 100%);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.btn-primary {
+  @apply bg-gradient-to-tr from-[#38bdf8] to-[#6366f1] text-white p-4  rounded-xl font-semibold shadow-lg transition hover:from-[#2563eb] hover:to-[#818cf8] focus:ring-2 focus:ring-[#818cf8];
+}
+
+.selector-card {
+  @apply bg-white bg-opacity-90 rounded-xl shadow-md p-4 my-2 border hover:border-[#818cf8] transition-all duration-150;
+}
+.selector-card input:checked + span {
+  @apply text-[#6366f1] font-bold;
+}
+
+.styled-textarea {
+  @apply bg-white bg-opacity-90 border border-[#818cf8] rounded-xl p-4 shadow focus:outline-none focus:ring-2 focus:ring-[#38bdf8] resize-none;
+}
+
+.msg-user {
+  @apply bg-gradient-to-r from-[#818cf8]/90 to-[#38bdf8]/90 text-white self-end;
+}
+.msg-assistant {
+  @apply bg-gradient-to-r from-[#a7f3d0]/90 to-[#bae6fd]/90 text-gray-800 self-start;
+}
+
+
+
+@keyframes glass-fade-in {
+  from { opacity: 0; transform: translateY(15px);}
+  to   { opacity: 1; transform: none;}
+}
+.animate-glass-in {
+  animation: glass-fade-in 0.7s cubic-bezier(.33,1.02,.65,1) both;
+}
+
+.loading-spinner {
+  border: 3px solid #e0e7ff;
+  border-top: 3px solid #6366f1;
+  border-radius: 50%;
+  align-self: center;
+  width: 24px;
+  height: 24px;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg);} }
+
+@media (max-width: 1200px) {
+  .w-[26rem] { width: 18rem !important; }
+  .max-w-5xl { max-width: 90vw !important; }
+}
+
+
+@media (max-width: 1024px) {
+  .lg\:max-w-5xl { max-width: 98vw !important; }
+  .lg\:w-\[52rem\] { width: 100vw !important; }
+  .w-\[20rem\] { width: 100vw !important; }
+}
+@media (max-width: 768px) {
+  .md\:flex-row { flex-direction: column !important; }
+  .md\:block { display: none !important; }
+  .lg\:block { display: none !important; }
+  .md\:w-\[46rem\] { width: 100vw !important; }
+  .md\:max-w-3xl { max-width: 98vw !important; }
+  .h-\[65vh\] { height: 60vh !important; }
+}
+
+.styled-textarea:focus { scroll-margin-bottom: 7rem; }

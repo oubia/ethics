@@ -1,0 +1,24 @@
+{
+    "available_settings": [
+      {
+        "selectedapproach": "Native-chunking",
+        "selectedChunkSize": "750",
+        "collection_name": "turismo_native_chunk_750"
+      },
+      {
+        "selectedapproach": "Native-chunking",
+        "selectedChunkSize": "250",
+        "collection_name": "turismo_native_chunk_250"
+      },
+      {
+        "selectedapproach": "Late-chunking",
+        "selectedChunkSize": "750",
+        "collection_name": "turismo_full"
+      },
+      {
+        "selectedapproach": "Late-chunking",
+        "selectedChunkSize": "250",
+        "collection_name": "turismo_full"
+      }
+    ]
+  }

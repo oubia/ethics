@@ -1,0 +1,58 @@
+import json
+from src.rag_models.retriever.retriever_factory import Retrieval_Factory
+from src.rag_models.vectorestore.vectorstore_factory import VectorStoreFactory
+from src.utils.prompts.prompt import general_prompt
+import logging
+logger = logging.getLogger(__name__)
+class Chat:
+
+    def __init__(
+        self,
+        model,
+        vectorstore_type: str,
+        collection_name: str,
+        embedding_model_name: str,
+        chunk_size: int,
+        retriever_type:str,
+        max_retrievals: int = 10,
+    ):
+        self.model = model
+        self.prompt = general_prompt
+
+        self.vectorstore = VectorStoreFactory(
+            vectorstore_type,
+            collection_name,
+            embedding_model_name,
+        ).get_vectorstore()
+        self.max_retrievals = max_retrievals
+        self.retriever_type = retriever_type
+        self.chunk_size = chunk_size
+
+    async def ask_stream(self, query: str):
+        try:
+            retrieval_handler = Retrieval_Factory(
+                llm=self.model,
+                vectorstore=self.vectorstore,
+                chunk_size=self.chunk_size,
+                max_retrievals = self.max_retrievals,
+            )
+            logger.info(f"Retrieving with {self.retriever_type} method")
+            retriever_methods = {
+                "Similarity-research": retrieval_handler.answer_with_similarity,
+                "Contextual-Compression": retrieval_handler.answer_with_compression,
+                "Answer-With-Multiquery": retrieval_handler.answer_with_multiquery,
+                "Hybrid-fusion": retrieval_handler.answer_with_hybrid,
+            }
+
+            method = retriever_methods.get(
+                self.retriever_type, retrieval_handler.answer_with_similarity
+            )
+
+            async for payload in method(query, prompt_template=self.prompt):
+                yield payload
+            
+            print(f"Query: {query} | Retriever Type: {self.retriever_type} | Chunk Size: {self.chunk_size}")
+
+            
+        except Exception as error:
+            yield json.dumps({"error": f"Error processing request: {error}"})

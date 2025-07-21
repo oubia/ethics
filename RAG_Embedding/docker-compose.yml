@@ -1,0 +1,13 @@
+services:
+  embedding:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-embedding
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+      - /Users/oubia/Desktop/chroma_langchain_db:/app/chroma_langchain_db
+    env_file:
+      - .env
