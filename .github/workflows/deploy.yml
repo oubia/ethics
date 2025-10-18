@@ -13,44 +13,51 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to Azure Container Registry
-        run: |
-          docker login -u "${{ secrets.AZURE_REGISTRY_USERNAME }}" --password-stdin "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}" <<< "${{ secrets.AZURE_REGISTRY_PASSWORD }}"
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
 
       - name: Build and push backend image
-        run: |
-          docker build -t "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:${{ github.sha }}" -t "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:latest" ./backend
-          docker push "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:${{ github.sha }}"
-          docker push "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:latest"
-          echo "Backend image pushed: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:latest"
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:latest
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:${{ github.sha }}
 
       - name: Build and push frontend image
-        run: |
-          docker build \
-            --build-arg REACT_APP_BASE_URL="https://api.ethics.oubia.me/" \
-            -t "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:${{ github.sha }}" \
-            -t "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:latest" \
-            ./frontend
-          docker push "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:${{ github.sha }}"
-          docker push "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:latest"
-          echo "Frontend image pushed: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:latest"
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          build-args: |
+            REACT_APP_BASE_URL=https://api.ethics.oubia.me/
+          push: true
+          tags: |
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:latest
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:${{ github.sha }}
 
       - name: Build and push ollama image
-        run: |
-          docker build -t "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:${{ github.sha }}" -t "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:latest" ./Ollama
-          docker push "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:${{ github.sha }}"
-          docker push "${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:latest"
-          echo "Ollama image pushed: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:latest"
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Ollama
+          push: true
+          tags: |
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:latest
+            ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:${{ github.sha }}
 
-      - name: Deploy notification
+      - name: Success notification
+        if: success()
         run: |
-          echo "✅ All images built and pushed to ACR successfully!"
-          echo "Images available at:"
-          echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:latest"
-          echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:latest"
-          echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:latest"
+          echo "✅ All images successfully pushed to ACR!"
           echo ""
-          echo "Next steps:"
-          echo "1. Go to Azure Portal → Container Instances"
-          echo "2. Create new container with image: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:latest"
-          echo "3. Update Namecheap DNS with Azure public IP"
+          echo "Images are ready at:"
+          echo "  🐳 Frontend: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:latest"
+          echo "  🐳 Backend: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:latest"
+          echo "  🐳 Ollama: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:latest"
