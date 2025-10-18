@@ -172,3 +172,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+# Vector store data (do not commit local DB files)
+.Vectorestor/
+Vectorestor/

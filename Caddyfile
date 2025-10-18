@@ -1,17 +1,16 @@
-# Replace these with your real domains
+# Ethics RAG application
 {
-  email you@example.com
+  email you@email.com
 }
 
-# Frontend at root domain
-example.me {
+# Frontend on subdomain
+ethics.oubia.me {
   encode gzip
-  # If frontend runs on port 3000 inside compose
   reverse_proxy frontend:3000
 }
 
-# Backend API on subdomain
-api.example.me {
+# Backend API on API subdomain
+api.ethics.oubia.me {
   encode gzip
   reverse_proxy backend:8000
 }
