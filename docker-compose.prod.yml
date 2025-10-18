@@ -1,0 +1,68 @@
+name: RAG_Application
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    container_name: rag-backend
+    # No public port; served via Caddy
+    expose:
+      - "8000"
+    volumes:
+      - ./backend:/app
+      - ./Vectorestor:/app/Vectorestor
+      - ./docs:/app/docs
+    env_file:
+      - ./.env
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_BASE_URL=${REACT_APP_BASE_URL}
+    container_name: rag-frontend
+    depends_on:
+      - backend
+    # Serve frontend via Caddy; no direct port mapping here
+    expose:
+      - "3000"
+    command: ["npx", "serve", "-s", "build", "-l", "3000"]
+    restart: unless-stopped
+
+  ollama:
+    build:
+      context: ./Ollama
+      dockerfile: Dockerfile
+    container_name: ollama
+    # No public port; backend reaches this service over the Docker network
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  caddy_data:
+  caddy_config:

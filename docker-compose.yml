@@ -1,0 +1,50 @@
+name: RAG_Application
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    container_name: rag-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./Vectorestor:/app/Vectorestor
+      - ./docs:/app/docs
+    env_file:
+      - ./.env
+    depends_on:
+      - ollama
+
+  frontend:
+    build: ./frontend
+    container_name: rag-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_BASE_URL=http://backend:8000/
+    depends_on:
+      - backend
+
+  ollama:
+    build:
+      context: ./Ollama
+      dockerfile: Dockerfile
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    #runtime: nvidia
+    command: >
+      /bin/sh -c "
+        ollama list | grep -q 'llama-guard3:1b' || ollama pull llama-guard3:1b;
+        ollama serve
+      "
+
+volumes:
+  ollama_data:
