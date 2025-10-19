@@ -14,14 +14,13 @@ RUN npm install
 # Copy frontend source
 COPY frontend/src ./src
 COPY frontend/public ./public
-COPY frontend/.env* ./
 
-# Set build-time environment
+# Set build-time environment for React
 ARG REACT_APP_BASE_URL=https://api.ethics.oubia.me/
 ENV REACT_APP_BASE_URL=$REACT_APP_BASE_URL
 
-# Build the app
-RUN npm run build
+# Build the app with env vars
+RUN REACT_APP_BASE_URL=$REACT_APP_BASE_URL npm run build
 
 # Use serve to run the built app
 RUN npm install -g serve
