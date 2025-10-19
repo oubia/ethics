@@ -1,0 +1,73 @@
+# Multi-stage Dockerfile for production deployment
+# This Dockerfile runs the full stack: Caddy + Frontend + Backend + Ollama
+# For Azure Container Instances
+
+# We'll use a docker-compose approach but wrapped in a single container
+# using supervisord to manage multiple services
+
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    python3.11 \
+    python3-pip \
+    curl \
+    git \
+    docker.io \
+    docker-compose \
+    supervisord \
+    npm \
+    nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy docker-compose and related files
+COPY docker-compose.prod.yml .
+COPY Caddyfile .
+COPY backend ./backend
+COPY frontend ./frontend
+COPY Ollama ./Ollama
+COPY .env .
+
+# Install Python dependencies for backend
+WORKDIR /app/backend
+RUN python3.11 -m pip install --upgrade pip && \
+    python3.11 -m pip install --no-cache-dir -r requirements.txt
+
+# Build frontend
+WORKDIR /app/frontend
+RUN npm install && npm run build
+
+WORKDIR /app
+
+# Create supervisor config
+RUN mkdir -p /etc/supervisor/conf.d
+
+RUN cat > /etc/supervisor/conf.d/services.conf << 'EOF'
+[supervisord]
+nodaemon=true
+logfile=/var/log/supervisor/supervisord.log
+
+[program:docker]
+command=/usr/bin/dockerd
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/docker.err.log
+stdout_logfile=/var/log/docker.out.log
+
+[program:docker-compose]
+command=docker-compose -f /app/docker-compose.prod.yml up
+autostart=true
+autorestart=true
+directory=/app
+stderr_logfile=/var/log/compose.err.log
+stdout_logfile=/var/log/compose.out.log
+EOF
+
+EXPOSE 80 443
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

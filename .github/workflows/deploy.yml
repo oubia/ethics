@@ -39,6 +39,12 @@ jobs:
           docker push '${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:latest'
           docker push '${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:${{ github.sha }}'
 
+      - name: Build and push production stack image
+        run: |
+          docker build -f Dockerfile.prod -t '${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-prod:latest' -t '${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-prod:${{ github.sha }}' .
+          docker push '${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-prod:latest'
+          docker push '${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-prod:${{ github.sha }}'
+
       - name: Success notification
         if: success()
         run: |
@@ -48,3 +54,4 @@ jobs:
           echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-frontend:latest"
           echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-backend:latest"
           echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-ollama:latest"
+          echo "  - ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/ethics-prod:latest (FULL STACK)"
