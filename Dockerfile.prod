@@ -1,7 +1,5 @@
-# Production-ready frontend container
-# This serves the built React app via the built-in server
-
-FROM node:18-alpine
+# Stage 1: Build React app
+FROM node:18-alpine as builder
 
 WORKDIR /app
 
@@ -9,22 +7,25 @@ WORKDIR /app
 COPY frontend/package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --only=production && npm ci
 
-# Copy frontend source
-COPY frontend/src ./src
-COPY frontend/public ./public
+# Copy all frontend files
+COPY frontend ./
 
-# Set build-time environment for React
+# Build with explicit env var
 ARG REACT_APP_BASE_URL=https://api.ethics.oubia.me/
 ENV REACT_APP_BASE_URL=$REACT_APP_BASE_URL
+RUN npm run build
 
-# Build the app with env vars
-RUN REACT_APP_BASE_URL=$REACT_APP_BASE_URL npm run build
+# Stage 2: Run with lightweight nginx
+FROM nginx:alpine
 
-# Use serve to run the built app
-RUN npm install -g serve
+# Copy built app from builder
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Copy nginx config
+RUN echo 'server { listen 3000; location / { root /usr/share/nginx/html; try_files $uri /index.html; } }' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 3000
 
-CMD ["serve", "-s", "build", "-l", "3000"]
+CMD ["nginx", "-g", "daemon off;"]
