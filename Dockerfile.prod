@@ -44,30 +44,18 @@ RUN npm install && npm run build
 
 WORKDIR /app
 
-# Create supervisor config
-RUN mkdir -p /etc/supervisor/conf.d
+# Create entrypoint script to run docker-compose
+RUN mkdir -p /scripts
 
-RUN cat > /etc/supervisor/conf.d/services.conf << 'EOF'
-[supervisord]
-nodaemon=true
-logfile=/var/log/supervisor/supervisord.log
+RUN cat > /scripts/entrypoint.sh << 'SCRIPTEOF'
+#!/bin/bash
+set -e
+cd /app
+exec docker-compose -f docker-compose.prod.yml up
+SCRIPTEOF
 
-[program:docker]
-command=/usr/bin/dockerd
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/docker.err.log
-stdout_logfile=/var/log/docker.out.log
-
-[program:docker-compose]
-command=docker-compose -f /app/docker-compose.prod.yml up
-autostart=true
-autorestart=true
-directory=/app
-stderr_logfile=/var/log/compose.err.log
-stdout_logfile=/var/log/compose.out.log
-EOF
+RUN chmod +x /scripts/entrypoint.sh
 
 EXPOSE 80 443
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+ENTRYPOINT ["/scripts/entrypoint.sh"]
