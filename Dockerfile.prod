@@ -45,16 +45,12 @@ RUN npm install && npm run build
 WORKDIR /app
 
 # Create entrypoint script to run docker-compose
-RUN mkdir -p /scripts
-
-RUN cat > /scripts/entrypoint.sh << 'SCRIPTEOF'
-#!/bin/bash
-set -e
-cd /app
-exec docker-compose -f docker-compose.prod.yml up
-SCRIPTEOF
-
-RUN chmod +x /scripts/entrypoint.sh
+RUN mkdir -p /scripts && \
+    echo '#!/bin/bash' > /scripts/entrypoint.sh && \
+    echo 'set -e' >> /scripts/entrypoint.sh && \
+    echo 'cd /app' >> /scripts/entrypoint.sh && \
+    echo 'exec docker-compose -f docker-compose.prod.yml up' >> /scripts/entrypoint.sh && \
+    chmod +x /scripts/entrypoint.sh
 
 EXPOSE 80 443
 
