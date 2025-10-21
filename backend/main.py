@@ -150,16 +150,8 @@ async def process_audio(audio: UploadFile = File(...)):
                 yield f"data: {error_data}\n\n"
 
 
-            try:
-                model = LLMFactory("Bedrock").get_llm()
-                assistant = Chat(model)
-                async for letter in assistant.ask_stream(transcribed_text):
-                    if letter:
-                        yield f"data: {json.dumps({'response': letter, 'type': 'assistant'})}\n\n"
-            except Exception as e:
-                error_data = json.dumps({'error': str(e)})
-                print(f"Error in assistant response: {error_data}")
-                yield f"data: {error_data}\n\n"
+            # Note: Audio processing returns transcription only.
+            # For assistant response, use the /chat/ endpoint with the transcribed text.
 
         return StreamingResponse(
             event_generator(),

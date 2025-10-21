@@ -17,18 +17,18 @@ services:
       - ollama
     restart: unless-stopped
 
-frontend:
-  build:
-    context: ./frontend
-    dockerfile: Dockerfile
-    args:
-      - REACT_APP_BASE_URL=${REACT_APP_BASE_URL}
-  container_name: rag-frontend
-  depends_on:
-    - backend
-  expose:
-    - "8080"  # Changed from 3000
-  restart: unless-stopped
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_BASE_URL=${REACT_APP_BASE_URL}
+    container_name: rag-frontend
+    depends_on:
+      - backend
+    expose:
+      - "8080"
+    restart: unless-stopped
 
   ollama:
     build:
