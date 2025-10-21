@@ -1,0 +1,31 @@
+# Docker Compose for All-in-One Deployment (Azure App Service)
+# This builds and runs all services in a single container
+# Usage: docker build -t ethics-allinone -f Dockerfile.allinone . && docker run -p 3000:3000 -p 8000:8000 -p 11434:11434 ethics-allinone
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.allinone
+    container_name: ethics-app
+    ports:
+      - "3000:3000"  # Frontend (Nginx)
+      - "8000:8000"  # Backend (FastAPI)
+      - "11434:11434" # Ollama
+    volumes:
+      - ./Vectorestor:/app/Vectorestor
+      - ./backend:/app/backend
+    environment:
+      - PYTHONPATH=src
+      - CHROMA_DIR=/app/Vectorestor
+      - OLLAMA_LLM_ENDPOINT=http://localhost:11434/
+      - OLLAMA_EMBEDDINGS_ENDPOINT=http://localhost:11434/
+      - REACT_APP_BASE_URL=http://localhost:8000/
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

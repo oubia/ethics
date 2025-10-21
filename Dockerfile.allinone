@@ -1,0 +1,102 @@
+# All-in-One Dockerfile for Azure App Service
+# Combines: Frontend (React + Nginx) + Backend (FastAPI) + Ollama + Caddy
+
+# Stage 1: Build React frontend
+FROM node:18-alpine as frontend-builder
+
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend ./
+ARG REACT_APP_BASE_URL=http://localhost:8000/
+ENV REACT_APP_BASE_URL=$REACT_APP_BASE_URL
+RUN npm run build
+
+# Stage 2: Runtime - All services
+FROM python:3.11-slim
+
+WORKDIR /app
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install all dependencies at once
+RUN apt-get update && \
+    apt-get install -y \
+    git curl build-essential ffmpeg \
+    nginx gettext \
+    supervisor \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy backend code
+COPY backend/requirements.txt ./backend/
+RUN python -m pip install --upgrade pip && \
+    python -m pip install --no-cache-dir -r ./backend/requirements.txt
+
+COPY backend ./backend
+COPY backend/config.json ./backend/
+
+# Copy frontend build output
+COPY --from=frontend-builder /app/frontend/build ./frontend/build
+
+# Setup Nginx for frontend
+RUN echo 'server {' > /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    listen 3000;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    location / {' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        root /app/frontend/build;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        try_files $uri /index.html;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    }' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '}' >> /etc/nginx/conf.d/frontend.conf.template && \
+    rm -f /etc/nginx/sites-enabled/default
+
+# Setup supervisor to manage multiple processes
+RUN mkdir -p /var/log/supervisor
+
+COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
+[supervisord]
+nodaemon=true
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisord.pid
+
+[program:nginx]
+command=/usr/sbin/nginx -g "daemon off;"
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/nginx.err.log
+stdout_logfile=/var/log/supervisor/nginx.out.log
+
+[program:fastapi]
+command=bash -c "cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000"
+directory=/app/backend
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/fastapi.err.log
+stdout_logfile=/var/log/supervisor/fastapi.out.log
+environment=PYTHONPATH=src,CHROMA_DIR=/app/Vectorestor,OLLAMA_LLM_ENDPOINT=http://localhost:11434/,OLLAMA_EMBEDDINGS_ENDPOINT=http://localhost:11434/
+
+[program:ollama]
+command=bash -c "ollama serve"
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/ollama.err.log
+stdout_logfile=/var/log/supervisor/ollama.out.log
+EOF
+
+# Create required directories
+RUN mkdir -p /app/Vectorestor /root/.ollama
+
+# Expose ports
+EXPOSE 3000 8000 11434
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Set environment variables
+ENV PORT=3000
+ENV PYTHONPATH=src
+ENV CHROMA_DIR=/app/Vectorestor
+ENV OLLAMA_LLM_ENDPOINT=http://localhost:11434/
+ENV OLLAMA_EMBEDDINGS_ENDPOINT=http://localhost:11434/
+
+# Start supervisor to manage all services
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
