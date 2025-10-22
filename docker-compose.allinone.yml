@@ -22,7 +22,10 @@ services:
       - CHROMA_DIR=/app/Vectorestor
       - OLLAMA_LLM_ENDPOINT=http://localhost:11434/
       - OLLAMA_EMBEDDINGS_ENDPOINT=http://localhost:11434/
-      - REACT_APP_BASE_URL=http://localhost:8000/
+      - REACT_APP_BASE_URL=/
+      - REQUEST_TIMEOUT=600
+      - OLLAMA_REQUEST_TIMEOUT=600
+      - STREAMING_TIMEOUT=600
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]

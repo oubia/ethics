@@ -41,9 +41,66 @@ COPY backend/config.json ./backend/
 # Copy frontend build output
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
 
-# Setup Nginx for frontend
-RUN echo 'server {' > /etc/nginx/conf.d/frontend.conf.template && \
+# Setup Nginx for frontend with 600s timeouts for streaming
+RUN echo 'upstream backend {' > /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    server localhost:8000;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    keepalive 32;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '}' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo 'server {' >> /etc/nginx/conf.d/frontend.conf.template && \
     echo '    listen 3000;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    server_name _;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    charset utf-8;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    # Critical timeouts for long-running LLM inference (10 minutes)' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    proxy_connect_timeout 600s;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    proxy_send_timeout 600s;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    proxy_read_timeout 600s;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    # Streaming support - disable buffering' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    proxy_buffering off;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    proxy_request_buffering off;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    proxy_http_version 1.1;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    # Chat endpoint with streaming responses' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    location /chat/ {' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_pass http://backend/chat/;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_http_version 1.1;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header Host $host;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Forwarded-Proto $scheme;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header Connection "";' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    }' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    # Audio processing endpoint' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    location /process_audio/ {' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_pass http://backend/process_audio/;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_http_version 1.1;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header Host $host;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Forwarded-Proto $scheme;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header Connection "";' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    }' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    # Health check endpoint' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    location /health {' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_pass http://backend/health;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    }' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    # API endpoints' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    location /api/ {' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_pass http://backend/api/;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_http_version 1.1;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header Host $host;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header X-Forwarded-Proto $scheme;' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '        proxy_set_header Connection "";' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    }' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '' >> /etc/nginx/conf.d/frontend.conf.template && \
+    echo '    # Serve React frontend' >> /etc/nginx/conf.d/frontend.conf.template && \
     echo '    location / {' >> /etc/nginx/conf.d/frontend.conf.template && \
     echo '        root /app/frontend/build;' >> /etc/nginx/conf.d/frontend.conf.template && \
     echo '        try_files $uri /index.html;' >> /etc/nginx/conf.d/frontend.conf.template && \
@@ -72,7 +129,7 @@ RUN mkdir -p /var/log/supervisor && \
     echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stderr_logfile=/var/log/supervisor/fastapi.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stdout_logfile=/var/log/supervisor/fastapi.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'environment=PYTHONPATH=src,CHROMA_DIR=/app/Vectorestor,OLLAMA_LLM_ENDPOINT=http://localhost:11434/,OLLAMA_EMBEDDINGS_ENDPOINT=http://localhost:11434/' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'environment=PYTHONPATH=src,CHROMA_DIR=/app/Vectorestor,OLLAMA_LLM_ENDPOINT=http://localhost:11434/,OLLAMA_EMBEDDINGS_ENDPOINT=http://localhost:11434/,REQUEST_TIMEOUT=600,OLLAMA_REQUEST_TIMEOUT=600,STREAMING_TIMEOUT=600' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '[program:ollama]' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'command=/usr/bin/ollama serve' >> /etc/supervisor/conf.d/supervisord.conf && \
