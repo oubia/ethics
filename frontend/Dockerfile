@@ -14,12 +14,29 @@ RUN apk add --no-cache gettext
 
 COPY --from=builder /app/build /usr/share/nginx/html
 
-# Create nginx config - proxy API calls to backend so POSTs reach FastAPI
-RUN echo 'server {' > /etc/nginx/conf.d/default.conf.template && \
+# Create nginx config - proxy API calls to backend with 600s timeouts for long LLM inference
+RUN echo 'upstream backend {' > /etc/nginx/conf.d/default.conf.template && \
+    echo '    server backend:8000;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    keepalive 32;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '}' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '' >> /etc/nginx/conf.d/default.conf.template && \
+    echo 'server {' >> /etc/nginx/conf.d/default.conf.template && \
     echo '    listen ${PORT};' >> /etc/nginx/conf.d/default.conf.template && \
-    echo '    # Proxy API endpoints to backend' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    charset utf-8;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    # Critical timeouts for long-running LLM inference (10 minutes)' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    proxy_connect_timeout 600s;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    proxy_send_timeout 600s;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    proxy_read_timeout 600s;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    # Streaming support' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    proxy_buffering off;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    proxy_request_buffering off;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    proxy_http_version 1.1;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    # Chat endpoint' >> /etc/nginx/conf.d/default.conf.template && \
     echo '    location /chat/ {' >> /etc/nginx/conf.d/default.conf.template && \
-    echo '        proxy_pass http://backend:8000/chat/;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '        proxy_pass http://backend/chat/;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_http_version 1.1;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header Host $host;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/conf.d/default.conf.template && \
@@ -28,8 +45,10 @@ RUN echo 'server {' > /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header Connection "";' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_buffering off;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '    }' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    # Audio processing endpoint' >> /etc/nginx/conf.d/default.conf.template && \
     echo '    location /process_audio/ {' >> /etc/nginx/conf.d/default.conf.template && \
-    echo '        proxy_pass http://backend:8000/process_audio/;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '        proxy_pass http://backend/process_audio/;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_http_version 1.1;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header Host $host;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/conf.d/default.conf.template && \
@@ -38,8 +57,15 @@ RUN echo 'server {' > /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header Connection "";' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_buffering off;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '    }' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    # Health check' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    location /health {' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '        proxy_pass http://backend/health;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    }' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    # API endpoints' >> /etc/nginx/conf.d/default.conf.template && \
     echo '    location /api/ {' >> /etc/nginx/conf.d/default.conf.template && \
-    echo '        proxy_pass http://backend:8000/api/;' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '        proxy_pass http://backend/api/;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_http_version 1.1;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header Host $host;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/conf.d/default.conf.template && \
@@ -48,7 +74,8 @@ RUN echo 'server {' > /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_set_header Connection "";' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        proxy_buffering off;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '    }' >> /etc/nginx/conf.d/default.conf.template && \
-    echo '    # Serve frontend' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '' >> /etc/nginx/conf.d/default.conf.template && \
+    echo '    # Serve React frontend' >> /etc/nginx/conf.d/default.conf.template && \
     echo '    location / {' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        root /usr/share/nginx/html;' >> /etc/nginx/conf.d/default.conf.template && \
     echo '        try_files $uri /index.html;' >> /etc/nginx/conf.d/default.conf.template && \
@@ -58,3 +85,4 @@ RUN echo 'server {' > /etc/nginx/conf.d/default.conf.template && \
 EXPOSE 8080
 ENV PORT=8080
 CMD ["sh", "-c", "envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+

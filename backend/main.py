@@ -17,6 +17,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Docker container"""
+    return {"status": "ok", "service": "RAG-Backend"}
+
 def load_config():
     config_path = "config.json"
     with open(config_path, "r") as f:
@@ -88,6 +94,7 @@ async def chat_endpoint(message: Message):
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
         }
     )
 @app.post("/process_audio/")
@@ -158,6 +165,7 @@ async def process_audio(audio: UploadFile = File(...)):
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",  # Disable nginx buffering
             }
         )
 
