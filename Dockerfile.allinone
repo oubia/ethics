@@ -114,6 +114,17 @@ RUN mkdir -p /var/log/supervisor && \
     echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'logfile=/var/log/supervisor/supervisord.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'pidfile=/var/run/supervisord.pid' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'loglevel=info' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'childlogdir=/var/log/supervisor' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[unix_http_server]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'file=/var/run/supervisor.sock' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[supervisorctl]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'serverurl=unix:///var/run/supervisor.sock' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[rpcinterface:supervisor]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '[program:nginx]' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'command=/usr/sbin/nginx -g "daemon off;"' >> /etc/supervisor/conf.d/supervisord.conf && \
@@ -121,22 +132,27 @@ RUN mkdir -p /var/log/supervisor && \
     echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stderr_logfile=/var/log/supervisor/nginx.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stdout_logfile=/var/log/supervisor/nginx.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo '[program:fastapi]' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'command=bash -c "cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000"' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'directory=/app/backend' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stderr_logfile=/var/log/supervisor/fastapi.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stdout_logfile=/var/log/supervisor/fastapi.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'environment=PYTHONPATH=src,CHROMA_DIR=/app/Vectorestor,OLLAMA_LLM_ENDPOINT=http://localhost:11434/,OLLAMA_EMBEDDINGS_ENDPOINT=http://localhost:11434/,REQUEST_TIMEOUT=600,OLLAMA_REQUEST_TIMEOUT=600,STREAMING_TIMEOUT=600' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '[program:ollama]' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'command=/usr/bin/ollama serve' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stderr_logfile=/var/log/supervisor/ollama.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stdout_logfile=/var/log/supervisor/ollama.out.log' >> /etc/supervisor/conf.d/supervisord.conf
+    echo 'stdout_logfile=/var/log/supervisor/ollama.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'priority=1' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:fastapi]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=bash -c "sleep 5 && cd /app/backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'directory=/app/backend' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile=/var/log/supervisor/fastapi.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/supervisor/fastapi.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'priority=999' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'environment=PYTHONPATH=/app/backend/src,CHROMA_DIR=/app/Vectorestor,OLLAMA_LLM_ENDPOINT=http://localhost:11434/,OLLAMA_EMBEDDINGS_ENDPOINT=http://localhost:11434/,REQUEST_TIMEOUT=600,OLLAMA_REQUEST_TIMEOUT=600,STREAMING_TIMEOUT=600' >> /etc/supervisor/conf.d/supervisord.conf
 
 # Create required directories
 RUN mkdir -p /app/Vectorestor /root/.ollama
