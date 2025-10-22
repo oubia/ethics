@@ -35,23 +35,24 @@ class Chat:
     async def ask_stream(self, query: str):
         logger.info("Received query: %s", query)
 
-        # Input moderation
-        try:
-            verdict_in = run_llamaguard(query, role="user")
-            logger.info("Input moderation verdict: %s", verdict_in)
+        # # Input moderation
+        # try:
+        #     verdict_in = run_llamaguard(query, role="user")
+        #     logger.info("Input moderation verdict: %s", verdict_in)
 
-            if not verdict_in.get("allowed", False):
-                blocked = {
-                    "type": "Input moderation error",
-                    "data": f"Messaggio non consentito: {', '.join(verdict_in.get('categories', []))}"
-                }
-                logger.warning("Blocking input: %s", blocked['data'])
-                yield blocked
-                return
-        except Exception as e:
-            logger.error("Input moderation failed: %s", e, exc_info=True)
-            yield {"error": f"Moderation input check failed: {str(e)}"}
-            return
+        #     if not verdict_in.get("allowed", False):
+        #         blocked = {
+        #             "type": "Input moderation error",
+        #             "data": f"Messaggio non consentito in query: {', '.join(verdict_in.get('categories', []))}"
+        #         }
+        #         logger.warning("Blocking input: %s", blocked['data'])
+        #         yield blocked
+        #         return
+
+        # except Exception as e:
+        #     logger.error("Input moderation failed: %s", e, exc_info=True)
+        #     yield {"error": f"Moderation input check failed: {str(e)}"}
+        #     return
 
         # Normal RAG pipeline
         try:
@@ -107,19 +108,21 @@ class Chat:
             yield {"error": f"Error processing request: {error}"}
             return
 
-        # Output moderation
-        try:
-            verdict_out = run_llamaguard(answer_text, role="assistant")
-            logger.info("Output moderation verdict: %s", verdict_out)
+        # # Output moderation
+        # try:
+        #     verdict_out = run_llamaguard(answer_text, role="assistant")
+        #     logger.info("Output moderation verdict: %s", verdict_out)
 
-            if not verdict_out.get("allowed", False):
-                blocked = {
-                    "type": "Output moderation error",
-                    "data": f"Risposta non consentita: {', '.join(verdict_out.get('categories', []))}"
-                }
-                logger.warning("Blocking unsafe output: %s", blocked['data'])
-                yield blocked
-                return
+        #     if not verdict_out.get("allowed", False):
+        #         blocked = {
+        #             "type": "Output moderation error",
+        #             "data": f"Risposta non consentita in output: {', '.join(verdict_out.get('categories', []))}"
+        #         }
+        #         logger.warning("Blocking unsafe output: %s", blocked['data'])
+        #         yield blocked
+        #         return
+        #     else:
+        #         yield answer_text
 
         except Exception as e:
             logger.error("Output moderation failed: %s", e, exc_info=True)

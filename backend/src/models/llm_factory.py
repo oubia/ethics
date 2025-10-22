@@ -15,7 +15,7 @@ class LLMFactory:
         try:
             logging.info("Attempting to initialize Llama LLM at endpoint: %s", OLLAMA_LLM_ENDPOINT)
             llm = OllamaLLM(
-                model="llama3.2:latest",  
+                model="llama3.1:8b",  
                 temperature=0.2,
                 streaming=True,
                 verbose=True,

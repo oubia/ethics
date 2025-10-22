@@ -2,7 +2,7 @@
 # Combines: Frontend (React + Nginx) + Backend (FastAPI) + Ollama + Caddy
 
 # Stage 1: Build React frontend
-FROM node:18-alpine as frontend-builder
+FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
